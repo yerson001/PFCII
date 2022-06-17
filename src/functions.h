@@ -30,7 +30,7 @@ class funciones{
             Point2f(370,465)
         };
        Mat temp,temp1;
-        VideoCapture cap("/home/yrsn/Dev/PFCII/video/test5.mp4");
+        VideoCapture cap("/home/yrsn/Dev/PFCII/video/video2.avi");
         while(1){
            Mat frame;
            Mat frame1;
@@ -57,17 +57,18 @@ class funciones{
 
            //temp = bordes(frame,62);
            //temp1 = dilatacion(temp,1.5);
-           imshow( "temp", frame1);
-           imshow( "temp--original", frame);
-           imshow( "temp1", output);
+           imshow( "scena-with-roci estract", frame1);
+           imshow( "original - video", frame);
+           imshow( "perspective transforme", output);
 
            //bool check = imwrite("/home/yrsn/Dev/PFCII/img/line.jpg", output);
 
            Canny(output, edgeImage, 100, 150, 3);
            temp = bordes(output,40);
            temp1 = dilatacion(temp,1);
-           imshow( "out", temp1);
-           imshow( "edge", edgeImage);
+
+           imshow( "canny-filter", edgeImage);
+           imshow( "final result", temp1);
            //imshow( "Frame", frame);
            char c=(char)waitKey(25);
            if(c==27)

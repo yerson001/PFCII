@@ -7,44 +7,46 @@
 using namespace cv;
 using namespace std;
 using namespace Eigen;
+#define debug(x) cout<<#x<<": "<<x<<endl
+#define tdebug(x,y) cout<<#x<<": "<<x<<" | "#y<<": "<<y<<endl
 
 class laneDetection
 {
 private:
     Mat perspectiveMatrix;
-    Mat oriImage; //The original input image.
-    Mat edgeImage; // The result of applying canny edge detection.
+    Mat oriImage;
+    Mat edgeImage;
     Mat warpEdgeImage;
     Mat warpOriImage;
     vector<Mat> imageChannels;
     Mat RedBinary;
     Mat mergeImage;
     Mat mergeImageRGB;
-    Mat histImage; //Histogram visualization.
-    Mat maskImage; //The curve image used to blend to the original image.
+    Mat histImage;
+    Mat maskImage;
     Mat maskImageWarp;
     Mat finalResult;
-    vector<int> histogram; //Histogram of the detected features
+    vector<int> histogram; //histograma
     vector<Point2f> laneL;
     vector<Point2f> laneR;
     vector<Point2f> curvePointsL;
     vector<Point2f> curvePointsR;
     int laneLcount;
     int laneRcount;
-    int midPoint; //The mid position of the view.
+    int midPoint; //mid.
     int midHeight;
-    int leftLanePos; //The detected left lane boundary position.
-    int rightLanePos; //The detected right lane boundary position.
-    short initRecordCount; // To record the number of times of executions in the first 5 frames.
-    const int blockNum; //Number of windows per line.
+    int leftLanePos; //limite carril
+    int rightLanePos; //limite carril
+    short initRecordCount; // registrar los 5 primeros frames
+    const int blockNum; //numero de blockes
     int stepY; //Window moving step.
-    const int windowSize; //Window Size (Horizontal).
-    Vector3d curveCoefL; //The coefficients of the curve (left).
-    Vector3d curveCoefR; //The coefficients of the curve (left).
-    Vector3d curveCoefRecordL[5]; //To keep the last five record to smooth the current coefficients (left).
-    Vector3d curveCoefRecordR[5]; //To keep the last five record to smooth the current coefficients (right).
+    const int windowSize; //tamaño slide windows
+    Vector3d curveCoefL; //coeficiente de curva derecha
+    Vector3d curveCoefR; //ciefucionete curva izquierda).
+    Vector3d curveCoefRecordL[5]; //ultimos 5 registros
+    Vector3d curveCoefRecordR[5]; //
     int recordCounter;
-    bool failDetectFlag; // To indicate whether the road marks is detected succesfully.
+    bool failDetectFlag; // indicar si las marcas de carreteras se detectan 1
     void calHist();
     void boundaryDetection();
     void laneSearch(const int &lanePos, vector<Point2f> &_line, int &lanecount, vector<Point2f> &curvePoints, char dir);
@@ -53,7 +55,7 @@ private:
 public:
     laneDetection(Mat _oriImage, Mat _perspectiveMatrix);
     ~laneDetection();
-    void laneDetctAlgo();
+    void laneDetctAlgo(string);
     Mat getEdgeDetectResult();
     Mat getWarpEdgeDetectResult();
     Mat getRedChannel();
@@ -85,49 +87,43 @@ laneDetection::laneDetection(const Mat _oriImage, const Mat _perspectiveMatrix)
 }
 
 laneDetection::~laneDetection() {}
-//The core of lane detection algorithm.
-void laneDetection::laneDetctAlgo()
+//pipe
+void laneDetection::laneDetctAlgo(string name)
 {
-    //Conduct Canny edge detection.
+    //canny
     Mat oriImageGray;
     cvtColor(oriImage, oriImageGray, COLOR_RGB2GRAY);
-     //imshow("reciv",oriImage);
     Canny(oriImageGray, edgeImage, 100, 150, 3);
-     //imshow("edgeImage",edgeImage);
-    warpPerspective(edgeImage, warpEdgeImage, perspectiveMatrix,Size(370,465));
-    //imshow("primera",warpEdgeImage);
+    warpPerspective(edgeImage, warpEdgeImage, perspectiveMatrix, edgeImage.size());
     inRange(warpEdgeImage, Scalar(1),Scalar(255),warpEdgeImage);
-    //imshow("primera inrage",warpEdgeImage);
-
-/*
     //Split the color image into different channels.
-    warpPerspective(oriImage, warpOriImage, perspectiveMatrix, Size(370,465));
+    warpPerspective(oriImage, warpOriImage, perspectiveMatrix, oriImage.size());
     split(warpOriImage, imageChannels);
 
-    //Conduct binarization for R channel.
-    inRange(imageChannels[2], Scalar(200), Scalar(255),RedBinary);
 
+
+    //cannal rojo
+    inRange(imageChannels[2], Scalar(200), Scalar(255),RedBinary);
     //Merge the binarized R channel image with edge detected image.
     add(warpEdgeImage, RedBinary, mergeImage);
     cvtColor(mergeImage, mergeImageRGB, COLOR_GRAY2RGB);
 
-    //Calculate the histogram.
+    //histogram.
     calHist();
 
-    //Detect the lane boundary.
+    //umbral
     boundaryDetection();
 
-    //Lane curve fitting.
+    //buscar  curva
     laneSearch(leftLanePos, laneL, laneLcount, curvePointsL, 'L');
     laneSearch(rightLanePos, laneR, laneRcount, curvePointsR, 'R');
     laneCoefEstimate();
     laneFitting();
-   warpPerspective(maskImage, maskImageWarp, perspectiveMatrix, maskImage.size(),WARP_INVERSE_MAP);
-*/
+    warpPerspective(maskImage, maskImageWarp, perspectiveMatrix, maskImage.size(),WARP_INVERSE_MAP);
 }
 
 
-//Calculate the histogram of the lane features along x axis.
+//frecuencia con las que aparecen los distintos niveles
 void laneDetection::calHist()
 {
     histogram.clear();
@@ -147,62 +143,69 @@ void laneDetection::calHist()
     for(int i=0; i<histogram.size(); i++)
     {
         line(histImage, Point2f(i,(maxValue-histogram.at(i))), Point2f(i,maxValue), Scalar(0,0,255), 1);
+        //imshow("--->",histImage);
     }
 }
 
-//Detect the lane boundary.
+//limites
 void laneDetection::boundaryDetection()
 {
-    //find the left lane boundary position
+    //izquierda
     vector<int>::iterator maxLPtr;
     maxLPtr = max_element(histogram.begin(), histogram.begin()+midPoint-1);
     int maxL = *maxLPtr;
+
     leftLanePos = distance(histogram.begin(),maxLPtr);
+    tdebug(maxL,leftLanePos);
 
 
-    //find the right lane boudary position
+    //derecha
     vector<int>::iterator maxRPtr;
     maxRPtr = max_element(histogram.begin()+midPoint, histogram.end());
     int maxR = *maxRPtr;
     rightLanePos = distance(histogram.begin(),maxRPtr);
+    tdebug(maxR,rightLanePos);
 
-    //draw the lane boundary on iamge
+    //draw
     if((initRecordCount < 5) || (failDetectFlag == true))
     {
         line(mergeImageRGB, Point2f(leftLanePos, 0), Point2f(leftLanePos, mergeImageRGB.size().height), Scalar(0, 255, 0), 10);
-        line(mergeImageRGB, Point2f(rightLanePos, 0), Point2f(rightLanePos, mergeImageRGB.size().height), Scalar(0, 255, 0), 10);
+        line(mergeImageRGB, Point2f(rightLanePos, 0), Point2f(rightLanePos, mergeImageRGB.size().height), Scalar(0, 0, 255), 10);
     }
 }
 
 
-//Fitting the lane curve.
+//Curva
 void laneDetection::laneSearch(const int &lanePos, vector<Point2f> &_line, int &lanecount, vector<Point2f> &curvePoints, char dir)
 {
     _line.clear();
 
-    //Lane search.
-    const int skipStep = 4;
+
+    const int skipStep = 4;//pass
     int nextPosX = lanePos;
     int xLU = 0, yLU = 0;
     int xRB = 0, yRB = 0;
     int _windowSize = windowSize;
-    int _stepY = stepY;
+    //int _stepY = stepY;
     int sumX = 0;
     int xcounter = 0;
     lanecount = 0;
 
 
-    if((initRecordCount < 5) || (failDetectFlag == true)) //Conduct full search.
+    if((initRecordCount < 5) || (failDetectFlag == true)) //busqueda completa
     {
         for(int i=0; i<blockNum; i++)
         {
             _windowSize = windowSize;
-            xLU = nextPosX - (windowSize >> 1); //The x coordinate of the upper left point.
-            yLU = stepY*(blockNum-i -1); // The y coordinate of the upper left point.
-            xRB = xLU + windowSize; //The x coordinate of the bottom right point.
-            yRB = yLU + stepY -1; //The y coordinate of the bottom right point.
-            // Avoid marginal effect.
-            //TODO: to make the code more simple and rearrange it.
+            xLU = nextPosX - (windowSize >> 1); //(x) del punto superior izquierdo
+            yLU = stepY*(blockNum-i -1); // (y) del punto superior izquierdo
+            tdebug(xLU,yLU);
+
+            xRB = xLU + windowSize; // x punto inferior derecho
+            yRB = yLU + stepY -1; /// y punto inferior derecho
+            //tdebug(xLU,yLU);
+
+            // si detecta carril
             if((xLU < 0))
             {
                 xLU =0;
@@ -216,10 +219,10 @@ void laneDetection::laneSearch(const int &lanePos, vector<Point2f> &_line, int &
             }
             if(xRB-xLU > 0 && xRB >= 0 && xLU >= 0)
             {
-                //Detect the samples inside the wiondow.
+                //Detectar puntos en las ventanas
                 sumX = 0;
                 xcounter = 0;
-                uchar* matPtr;
+                uchar* matPtr;//valor pixel
                 for(int j=yLU; j<=yRB; j+=skipStep)
                 {
                     matPtr = mergeImage.data + (j*mergeImage.size().width);
@@ -231,10 +234,10 @@ void laneDetection::laneSearch(const int &lanePos, vector<Point2f> &_line, int &
                         }
                     }
                 }
-                if (xcounter!=0) sumX /= xcounter; //the average x coordinate inside the window.
+                if (xcounter!=0) sumX /= xcounter; //media de los puntos encontrados
                 else sumX = nextPosX;
 
-                //Modified the window position based on previous calculated average x coodinate.
+                //modificar posion de la ventana en base a la media
                 nextPosX = sumX;
                 xLU = ((nextPosX-(windowSize>>1))>0)? (nextPosX-(windowSize>>1)) : 0;
                 xRB = ((xLU + windowSize) < (mergeImage.size().width))? (xLU + windowSize) : (mergeImage.size().width-1);
@@ -258,7 +261,7 @@ void laneDetection::laneSearch(const int &lanePos, vector<Point2f> &_line, int &
 
         }
     }
-    else //Conduct search based on previous results.
+    else //usando resultados previos
     {
         uchar* matPtr;
         int xtemp;
@@ -313,10 +316,10 @@ void laneDetection::laneSearch(const int &lanePos, vector<Point2f> &_line, int &
 }
 
 
-//Using SVD to solve the coefficients of the curve.
+
 bool laneDetection::laneCoefEstimate()
 {
-    //To fitting the lance curve by using least square method
+    //minimos cuadrados
     int countThreshold = 300;
     if((laneLcount > countThreshold) && (laneRcount > countThreshold))
     {
@@ -325,7 +328,7 @@ bool laneDetection::laneCoefEstimate()
         MatrixXd leftMatrix(laneLcount,3);
         MatrixXd rightMatrix(laneRcount,3);
 
-        //left lane curve coefficients estimation
+        //estimar coeficiente de curva
         for(int i=0; i<laneLcount; i++)
         {
             xValueL(i) = laneL[i].x;
@@ -333,8 +336,8 @@ bool laneDetection::laneCoefEstimate()
             leftMatrix(i,1) = laneL[i].y;
             leftMatrix(i,2) = 1;
         }
+        //debug(leftMatrix(i,3));
 
-        //right lane curve coefficients estimation
         for(int i=0; i<laneRcount; i++)
         {
             xValueR(i) = laneR[i].x;
@@ -342,10 +345,9 @@ bool laneDetection::laneCoefEstimate()
             rightMatrix(i,1) = laneR[i].y;
             rightMatrix(i,2) = 1;
         }
-        //curveCoefL = leftMatrix.jacobiSvd(ComputeThinU | ComputeThinV).solve(xValueL);
-        //curveCoefR = rightMatrix.jacobiSvd(ComputeThinU | ComputeThinV).solve(xValueR);
-        //curveCoefL = leftMatrix.colPivHouseholderQr().solve(xValueL);
-        //curveCoefR = rightMatrix.colPivHouseholderQr().solve(xValueR);
+
+        //debug(xValueL);
+
         curveCoefL = (leftMatrix.transpose()*leftMatrix).ldlt().solve(leftMatrix.transpose()*xValueL);
         curveCoefR = (rightMatrix.transpose()*rightMatrix).ldlt().solve(rightMatrix.transpose()*xValueR);
 
@@ -358,14 +360,14 @@ bool laneDetection::laneCoefEstimate()
     }
     else
     {
-        cerr << "[Lane Detection Algo] There is no enough detected road marks.";
+        cerr << "[ERROR LINE] mas de una linea";
         failDetectFlag = true;
         return false;
     }
 }
 
 
-//To fit the lane.
+//ajustar linea
 void laneDetection::laneFitting()
 {
     maskImage.create(mergeImage.size().height, mergeImage.size().width, CV_8UC3);
@@ -373,7 +375,7 @@ void laneDetection::laneFitting()
     curvePointsL.clear();
     curvePointsR.clear();
 
-    //To average the past 5 estimated coefficients.
+    //5 frames
     if(initRecordCount == 5)
     {
         curveCoefL = (curveCoefRecordL[0] + curveCoefRecordL[1] + curveCoefRecordL[2] + curveCoefRecordL[3] + curveCoefRecordL[4]) / 5;
@@ -405,9 +407,9 @@ void laneDetection::laneFitting()
         matPtr = maskImage.data + i * maskImage.size().width * 3;
         for(int j = curvePointsL[i].x; j <= curvePointsR[i].x; j++)
         {
-            *(matPtr + j*3) = 0;
+            *(matPtr + j*3) = 2;
             *(matPtr + j*3 + 1) = 255;
-            *(matPtr + j*3 + 2) = 0;
+            *(matPtr + j*3 + 2) = 51;
         }
     }
 
