@@ -1,5 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <vector>
+#include <opencv2/highgui/highgui.hpp>
 #include <algorithm>
 #include <Eigen/Dense>
 #include "math.h"
@@ -52,7 +53,10 @@ private:
     void laneSearch(const int &lanePos, vector<Point2f> &_line, int &lanecount, vector<Point2f> &curvePoints, char dir);
     bool laneCoefEstimate();
     void laneFitting();
+
 public:
+    int errorframe;
+    int count();
     laneDetection(Mat _oriImage, Mat _perspectiveMatrix);
     ~laneDetection();
     void laneDetctAlgo(string);
@@ -84,12 +88,14 @@ laneDetection::laneDetection(const Mat _oriImage, const Mat _perspectiveMatrix)
     {
         curveCoefRecordL[i] = initV;
     }
+    errorframe = 0;
 }
 
 laneDetection::~laneDetection() {}
 //pipe
 void laneDetection::laneDetctAlgo(string name)
 {
+
     //canny
     Mat oriImageGray;
     cvtColor(oriImage, oriImageGray, COLOR_RGB2GRAY);
@@ -156,7 +162,7 @@ void laneDetection::boundaryDetection()
     int maxL = *maxLPtr;
 
     leftLanePos = distance(histogram.begin(),maxLPtr);
-    tdebug(maxL,leftLanePos);
+    //tdebug(maxL,leftLanePos);
 
 
     //derecha
@@ -164,7 +170,7 @@ void laneDetection::boundaryDetection()
     maxRPtr = max_element(histogram.begin()+midPoint, histogram.end());
     int maxR = *maxRPtr;
     rightLanePos = distance(histogram.begin(),maxRPtr);
-    tdebug(maxR,rightLanePos);
+    //tdebug(maxR,rightLanePos);
 
     //draw
     if((initRecordCount < 5) || (failDetectFlag == true))
@@ -199,7 +205,7 @@ void laneDetection::laneSearch(const int &lanePos, vector<Point2f> &_line, int &
             _windowSize = windowSize;
             xLU = nextPosX - (windowSize >> 1); //(x) del punto superior izquierdo
             yLU = stepY*(blockNum-i -1); // (y) del punto superior izquierdo
-            tdebug(xLU,yLU);
+            //tdebug(xLU,yLU);
 
             xRB = xLU + windowSize; // x punto inferior derecho
             yRB = yLU + stepY -1; /// y punto inferior derecho
@@ -361,6 +367,8 @@ bool laneDetection::laneCoefEstimate()
     else
     {
         cerr << "[ERROR LINE] mas de una linea";
+        errorframe+=1;
+        cout<<errorframe<<endl;
         failDetectFlag = true;
         return false;
     }
@@ -408,7 +416,7 @@ void laneDetection::laneFitting()
         for(int j = curvePointsL[i].x; j <= curvePointsR[i].x; j++)
         {
             *(matPtr + j*3) = 2;
-            *(matPtr + j*3 + 1) = 255;
+            *(matPtr + j*3 + 1) = 25;
             *(matPtr + j*3 + 2) = 51;
         }
     }
@@ -471,7 +479,25 @@ float laneDetection::getLaneCenterDist()
 {
     float laneCenter = ((rightLanePos - leftLanePos) / 2) + leftLanePos;
     float imageCenter = mergeImageRGB.size().width / 2;
+    debug(imageCenter);
+
+    cv::circle(mergeImageRGB,Point2f(laneCenter,imageCenter), 6, Scalar(0,255,0), FILLED);
+
+
+    //imshow("goo",mergeImageRGB);
     float result;
-    result = (laneCenter -imageCenter)* 3.5 / 600; //Assume the lane width is 3.5m and about 600 pixels in our image.
+    //Assume the lane width is 3.5m and about 600 pixels in our image.
+    result = (laneCenter -imageCenter)* 3.5 / 600;
+    cv::circle(mergeImageRGB,Point2f(laneCenter,result), 6, Scalar(0,0,255), FILLED);
+
+    line(mergeImageRGB, Point2f(laneCenter,imageCenter+result), Point2f(laneCenter,result), Scalar(255, 0, 0),
+             3, LINE_8);
+    //debug(result);
+    //imshow("goo",mergeImageRGB);
     return result;
 }
+
+int laneDetection::count(){
+    return errorframe;
+}
+

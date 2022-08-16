@@ -17,10 +17,10 @@ class funciones{
     void ReadVideo()
     {
         Point2f perspectiveSrc[] = {
-            Point2f(240,370),
-            Point2f(405,370),
-            Point2f(175,465),
-            Point2f(460,465)
+            Point2f(570,300),
+            Point2f(1000,300),
+            Point2f(170,698),
+            Point2f(1300,698)
         };
 
         Point2f perspectiveDst[] = {
@@ -30,7 +30,7 @@ class funciones{
             Point2f(370,465)
         };
        Mat temp,temp1;
-        VideoCapture cap("/home/yrsn/Dev/PFCII/video/video2.avi");
+        VideoCapture cap("/home/y3rsn/Dev/cpp/CV_2022/ALD/video/video_.mp4");
         while(1){
            Mat frame;
            Mat frame1;
@@ -58,17 +58,17 @@ class funciones{
            //temp = bordes(frame,62);
            //temp1 = dilatacion(temp,1.5);
            imshow( "scena-with-roci estract", frame1);
-           imshow( "original - video", frame);
+          // imshow( "original - video", frame);
            imshow( "perspective transforme", output);
 
            //bool check = imwrite("/home/yrsn/Dev/PFCII/img/line.jpg", output);
 
-           Canny(output, edgeImage, 100, 150, 3);
-           temp = bordes(output,40);
-           temp1 = dilatacion(temp,1);
+//           Canny(output, edgeImage, 100, 150, 3);
+//           temp = bordes(output,40);
+//           temp1 = dilatacion(temp,1);
 
-           imshow( "canny-filter", edgeImage);
-           imshow( "final result", temp1);
+           //imshow( "canny-filter", edgeImage);
+           //imshow( "final result", temp1);
            //imshow( "Frame", frame);
            char c=(char)waitKey(25);
            if(c==27)

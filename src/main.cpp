@@ -22,20 +22,46 @@ Size videoSize; // Input Variable Size.
 Mat cameraMatrix, dist; //Calibration Matrix.
 Mat perspectiveMatrix; //Homography Matrix.
 String coordinatetext = "";
+Mat debugWindowROI;
+
+//Point2f perspectiveSrc[] = {
+//    Point2f(570,490),
+//    Point2f(720,490),
+//    Point2f(450,698),
+//    Point2f(830,698)};
+
+//Point2f perspectiveDst[] = {
+//    Point2f(200,0),
+//    Point2f(980,0),
+//    Point2f(200,720),
+//    Point2f(980,720)};
+
+
 
 Point2f perspectiveSrc[] = {
-    Point2f(570,490),
-    Point2f(720,490),
-    Point2f(450,698),
-    Point2f(830,698)};
+    Point2f(570,300),
+    Point2f(1000,300),
+    Point2f(170,698),
+    Point2f(1300,698)
+};
 
 Point2f perspectiveDst[] = {
-    Point2f(200,0),
-    Point2f(980,0),
-    Point2f(200,720),
-    Point2f(980,720)};
+    Point2f(0,0),
+    Point2f(370,0),
+    Point2f(0,465),
+    Point2f(370,465)
+};
 
-
+void draw_lines(Mat frame){
+    circle(frame,perspectiveSrc[0], 3, Scalar(0,255,0), FILLED);
+    circle(frame,perspectiveSrc[1], 3, Scalar(0,255,0), FILLED);
+    circle(frame,perspectiveSrc[3], 3, Scalar(0,255,0), FILLED);
+    circle(frame,perspectiveSrc[2], 3, Scalar(0,255,0), FILLED);
+    line(frame, perspectiveSrc[0], perspectiveSrc[1], Scalar(255,0,0), 1);
+    line(frame, perspectiveSrc[1], perspectiveSrc[3], Scalar(255,0,0), 1);
+    line(frame, perspectiveSrc[3], perspectiveSrc[2], Scalar(255,0,0), 1);
+    line(frame, perspectiveSrc[2], perspectiveSrc[0], Scalar(255,0,0), 1);
+}
 
 funciones fun;
 
@@ -44,23 +70,17 @@ int main(int argc, char **argv)
 {
     //Get the Perspective Matrix.
     perspectiveMatrix = getPerspectiveTransform(perspectiveSrc,perspectiveDst);
-    //rperspectiveMatrix = getPerspectiveTransform(rperspectiveSrc,rperspectiveDst);
 
 
     string d = "jkj";
     // *********************READ VIDEO*************************
-    //laneVideo.open("/home/yrsn/Dev/ALD-main/video/video.mp4");
-    laneVideo.open("/home/yrsn/Dev/ALD-main/video/video2.avi");
-    //laneRoad.open("/home/yrsn/Dev/ALD-main/video/video2.avi");
+    laneVideo.open("/home/y3rsn/Dev/cpp/CV_2022/ALD/video/video_.mp4");
+
 
 
     videoSize = Size((int)laneVideo.get(CAP_PROP_FRAME_WIDTH),(int)laneVideo.get(CAP_PROP_FRAME_HEIGHT));
-    //roadSize = Size((int)laneRoad.get(CAP_PROP_FRAME_WIDTH),(int)laneRoad.get(CAP_PROP_FRAME_HEIGHT));
 
-
-
-
-    std::string PATH = "/home/yrsn/Dev/ALD-main/camera_cal/";
+    std::string PATH = "/home/y3rsn/Dev/cpp/CV_2022/ALD/camera_cal/";
 
     //--------------Camera Calibration Start-----------------
     FileStorage fsRead;
@@ -88,187 +108,102 @@ int main(int argc, char **argv)
     }
     undistort(src, dst, cameraMatrix, dist);
     //--------------Camera Calibration Finish-----------------
+
     //Display Video Image
-    //Display Video Image
-     laneVideo.set(CAP_PROP_POS_FRAMES, 0);
-     laneVideo >> videoFrame;
-     namedWindow("Original Image", WINDOW_NORMAL);
-     imshow("Original Image",videoFrame);
-
-
-     undistort(videoFrame, videoFrameUndistorted, cameraMatrix, dist);
-     _videoFrameUndistorted = videoFrameUndistorted.clone();
-     imshow("Image",fun.ResizeImage(_videoFrameUndistorted,0.5));
-
-
-
-     //draw the roi (for perspective transform)
-     line(videoFrameUndistorted, perspectiveSrc[0], perspectiveSrc[1], Scalar(0,0,255), 2);
-     line(videoFrameUndistorted, perspectiveSrc[1], perspectiveSrc[3], Scalar(0,0,255), 2);
-     line(videoFrameUndistorted, perspectiveSrc[3], perspectiveSrc[2], Scalar(0,0,255), 2);
-     line(videoFrameUndistorted, perspectiveSrc[2], perspectiveSrc[0], Scalar(0,0,255), 2);
-     circle(videoFrameUndistorted, perspectiveSrc[0], 6, Scalar(0,0,255), FILLED);
-     circle(videoFrameUndistorted, perspectiveSrc[1], 6, Scalar(0,0,255), FILLED);
-     circle(videoFrameUndistorted, perspectiveSrc[2], 6, Scalar(0,0,255), FILLED);
-     circle(videoFrameUndistorted, perspectiveSrc[3], 6, Scalar(0,0,255), FILLED);
-
-     imshow("video-frame",videoFrameUndistorted);
-     //imshow("road-frame",roadFrameUndistorted);
-
-
-     int sliderMaxValue = laneVideo.get(CAP_PROP_FRAME_COUNT) - 10;
-     createTrackbar("Frame", "Original Image", &sliderValue, sliderMaxValue, videoSliderCallback);
-     videoSliderCallback(sliderValue, 0);
-
-
-     //Start Homography
-     warpPerspective(_videoFrameUndistorted, videoFramePerspective, perspectiveMatrix, videoSize);
-
-
-     /***********************************************************
-     *instancia de la clase parametros la imagencorregida por
-     * calibracion y la matriz de perspectiva que contiene la
-     * zonade interes
-     ***********************************************************/
-     laneDetection LaneAlgo(_videoFrameUndistorted, perspectiveMatrix);
-     LaneAlgo.laneDetctAlgo("roadline");
-
-
-
-
-     /***********************************************************
-     *
-     *
-     ***********************************************************/
-
-
-
-     waitKey(0);
-     return 0;
-
-}
-
-
-void videoSliderCallback(int, void*)
-{
-    laneVideo.set(CAP_PROP_POS_FRAMES, sliderValue);
+    laneVideo.set(CAP_PROP_POS_FRAMES, 0);
     laneVideo >> videoFrame;
-    imshow("Original Image",fun.ResizeImage(videoFrame,0.5));
+//    imshow("video frame ",videoFrame);
     undistort(videoFrame, videoFrameUndistorted, cameraMatrix, dist);
+//    imshow("undis",videoFrameUndistorted);
     _videoFrameUndistorted = videoFrameUndistorted.clone();
-    line(videoFrameUndistorted, perspectiveSrc[0], perspectiveSrc[1], Scalar(0,0,255), 2);
-    line(videoFrameUndistorted, perspectiveSrc[1], perspectiveSrc[3], Scalar(0,0,255), 2);
-    line(videoFrameUndistorted, perspectiveSrc[3], perspectiveSrc[2], Scalar(0,0,255), 2);
-    line(videoFrameUndistorted, perspectiveSrc[2], perspectiveSrc[0], Scalar(0,0,255), 2);
-    circle(videoFrameUndistorted, perspectiveSrc[0], 6, Scalar(0,0,255), FILLED);
-    circle(videoFrameUndistorted, perspectiveSrc[1], 6, Scalar(0,0,255), FILLED);
-    circle(videoFrameUndistorted, perspectiveSrc[2], 6, Scalar(0,0,255), FILLED);
-    circle(videoFrameUndistorted, perspectiveSrc[3], 6, Scalar(0,0,255), FILLED);
+    //Start Homography
+    warpPerspective(_videoFrameUndistorted, videoFramePerspective, perspectiveMatrix, Size(370,465));
 
-    //To warp the image.
-    warpPerspective(_videoFrameUndistorted, videoFramePerspective, perspectiveMatrix, videoSize);
+    imshow("perspective",videoFramePerspective);
 
-    //Applying lane detection algorithm
-    laneDetection LaneAlgo(_videoFrameUndistorted, perspectiveMatrix);
-    LaneAlgo.laneDetctAlgo("este");
 
-    Mat warpEdge; warpEdge = LaneAlgo.getWarpEdgeDetectResult().clone();
-    Mat imageRedChannel; imageRedChannel = LaneAlgo.getRedChannel().clone();
-    Mat redBinary; redBinary = LaneAlgo.getRedBinary().clone();
-    Mat mergeImage; mergeImage = LaneAlgo.getMergeImage().clone();
-    Mat histImage; histImage = LaneAlgo.getHistImage().clone();
-    Mat maskImage; maskImage = LaneAlgo.getMaskImage().clone();
-    Mat warpMask; warpMask = LaneAlgo.getWarpMask().clone();
-    Mat finalResult; finalResult = LaneAlgo.getFinalResult().clone();
-
-    //to create debug window
+    Mat mergeImage;
+    Mat finalResult;
+    //To create debug window
     Mat debugWindowROI;
     Mat resizePic;
+    //===========Start Real Time Processing===========
+    float laneDistant = 0;
+    stringstream ss;
+    namedWindow("Real Time Execution", WINDOW_NORMAL);
+    laneVideo.set(CAP_PROP_POS_FRAMES, 0);
+    laneVideo >> videoFrame;
+    Mat showVideos(videoFrame.size().height*2, videoFrame.size().width * 2, CV_8UC3, Scalar(0,0,0));
+    laneDetection LaneAlgoVideo(_videoFrameUndistorted, perspectiveMatrix);
+    undistort(videoFrame, videoFrameUndistorted, cameraMatrix, dist);
+    _videoFrameUndistorted = videoFrameUndistorted.clone();
 
-    //Show the undistoted image
-    debugWindowROI = debugWindow(Rect(640, 0, 320, 180));
-    resize(videoFrameUndistorted, resizePic, Size(320,180));
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+    //fun.ReadVideo();
+    while(!videoFrame.empty())
+    {
+        draw_lines(videoFrame);
+        //Start Homography
+        warpPerspective(_videoFrameUndistorted, videoFramePerspective, perspectiveMatrix,videoSize); // videoSize
 
-    //Show the perspective view
-    debugWindowROI = debugWindow(Rect(960, 0, 320, 180));
-    resize(videoFramePerspective, resizePic, Size(320,180));
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+        //Applying lane detection algorithm
+        //if(videoFrameCount == 0)
+        LaneAlgoVideo.laneDetctAlgo(" ");
+        finalResult = LaneAlgoVideo.getFinalResult();
 
-    //Show the red channel
-    debugWindowROI = debugWindow(Rect(0, 180, 320, 180));
-    imshow("imageRedChannel",fun.ResizeImage(imageRedChannel,0.5));
-    resize(imageRedChannel, resizePic, Size(320,180));
-    cvtColor(resizePic, resizePic, COLOR_GRAY2BGR);
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+        //Detect the distance to lane center.
+        laneDistant = LaneAlgoVideo.getLaneCenterDist();
+        if(laneDistant > 0)
+        {
+            ss.str("");
+            ss.clear();
+            ss << abs(laneDistant) << "m " << " To the Right";
+            putText(finalResult, ss.str(), Point(50,50), 0, 2, Scalar(0, 0, 255), 2);
+        }
+        else
+        {
+            ss.str("");
+            ss.clear();
+            ss << abs(laneDistant) << "m " << " To the Left";
+            putText(finalResult, ss.str(), Point(50,50), 0, 2, Scalar(0, 0, 255), 2);
+        }
 
-    //Show the canny edge detection result
-    debugWindowROI = debugWindow(Rect(320, 180, 320, 180));
-      imshow("warpEdge",fun.ResizeImage(warpEdge,0.5));
-    resize(warpEdge, resizePic, Size(320,180));
-    cvtColor(resizePic, resizePic, COLOR_GRAY2BGR);
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+        int twidth = videoFrame.size().width/2;
+        int theight = videoFrame.size().height/2;
 
-    //Show the thresholding red channel image
-    debugWindowROI = debugWindow(Rect(640, 180, 320, 180));
-    resize(redBinary, resizePic, Size(320,180));
-    cvtColor(resizePic, resizePic, COLOR_GRAY2BGR);
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+        debugWindowROI = showVideos(Rect(0,0,twidth,theight));
+        addWeighted(debugWindowROI, 0,fun.ResizeImage(videoFrame,0.5), 1, 0, debugWindowROI);
 
-    //Show the merged image
-    debugWindowROI = debugWindow(Rect(960, 180, 320, 180));
-     imshow("mrgeImage",fun.ResizeImage(mergeImage,0.5));
-    resize(mergeImage, resizePic, Size(320,180));
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+        debugWindowROI = showVideos(Rect(twidth,0,twidth,theight));
+        addWeighted(debugWindowROI, 0,fun.ResizeImage(finalResult,0.5), 1, 0, debugWindowROI);
 
-    //Show histogram
-    debugWindowROI = debugWindow(Rect(0, 360, 320, 180));
-    imshow("histImage",fun.ResizeImage(histImage,0.5));
-    resize(histImage, resizePic, Size(320,180));
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+        mergeImage = LaneAlgoVideo.getMergeImage().clone();
+        debugWindowROI = showVideos(Rect(0,theight,twidth,theight));
+        addWeighted(debugWindowROI, 0, fun.ResizeImage(mergeImage,0.5), 1, 0, debugWindowROI);
 
-    //Show mask
-    debugWindowROI = debugWindow(Rect(320, 360, 320, 180));
-    //imshow("maskImage",fun.ResizeImage(maskImage,0.5));
-    resize(maskImage, resizePic, Size(320,180));
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+        debugWindowROI = showVideos(Rect(twidth,theight,twidth,theight));
+        addWeighted(debugWindowROI, 0, fun.ResizeImage(videoFramePerspective,0.5), 1, 0, debugWindowROI);
 
-    //Show warp mask
-    debugWindowROI = debugWindow(Rect(640, 360, 320, 180));
-    resize(warpMask, resizePic, Size(320,180));
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
 
-    //show final result
-    debugWindowROI = debugWindow(Rect(960, 360, 320, 180));
-    imshow("finalResult",finalResult);
-    resize(finalResult, resizePic, Size(320,180));
-    debugWindowROI = Scalar(0, 0, 0);
-    addWeighted(debugWindowROI, 0, resizePic, 1, 0, debugWindowROI);
+        imshow("Real Time Execution", showVideos);
 
-    //Draw lines to separte the images
-    line(debugWindow,Point2f(320,0),Point2f(320,539),Scalar(0,150,255),1.8);
-    line(debugWindow,Point2f(640,0),Point2f(640,539),Scalar(0,150,255),1.8);
-    line(debugWindow,Point2f(960,0),Point2f(960,539),Scalar(0,150,255),1.8);
-    line(debugWindow,Point2f(0,180),Point2f(1279,180),Scalar(0,150,255),1.8);
-    line(debugWindow,Point2f(0,360),Point2f(1279,360),Scalar(0,150,255),1.8);
+        laneVideo >> videoFrame;
+        if(videoFrame.empty()) break;
 
-    //namedWindow("DEBUG", WINDOW_AUTOSIZE);
-    //imshow("DEBUG", debugWindow);
+        //videoFrameCount = (videoFrameCount + 1) % 10;
 
+        //Calibration
+        undistort(videoFrame, videoFrameUndistorted, cameraMatrix, dist);
+        _videoFrameUndistorted = videoFrameUndistorted.clone();
+        LaneAlgoVideo.setInputImage(_videoFrameUndistorted);
+
+        if(waitKey(10) == 27) break;
+    }
+    //    //===========Finish Real Time Processing===========
+
+    waitKey(0);
+    return 0;
 
 }
 
 
-/***********************************************************
-*
-*
-***********************************************************/
+
