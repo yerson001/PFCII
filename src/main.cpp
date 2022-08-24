@@ -42,14 +42,14 @@ Point2f perspectiveSrc[] = {
     Point2f(570,300),
     Point2f(1000,300),
     Point2f(170,698),
-    Point2f(1300,698)
+    Point2f(1300,730)
 };
 
 Point2f perspectiveDst[] = {
     Point2f(0,0),
-    Point2f(370,0),
-    Point2f(0,465),
-    Point2f(370,465)
+    Point2f(1280,0),
+    Point2f(0,720),
+    Point2f(1280,720)
 };
 
 void draw_lines(Mat frame){
@@ -74,13 +74,13 @@ int main(int argc, char **argv)
 
     string d = "jkj";
     // *********************READ VIDEO*************************
-    laneVideo.open("/home/y3rsn/Dev/cpp/CV_2022/ALD/video/video_.mp4");
+    laneVideo.open("/home/yrsn/Dev/ALD/video/video_.mp4");
 
 
 
     videoSize = Size((int)laneVideo.get(CAP_PROP_FRAME_WIDTH),(int)laneVideo.get(CAP_PROP_FRAME_HEIGHT));
 
-    std::string PATH = "/home/y3rsn/Dev/cpp/CV_2022/ALD/camera_cal/";
+    std::string PATH = "/home/yrsn/Dev/ALD/camera_cal/";
 
     //--------------Camera Calibration Start-----------------
     FileStorage fsRead;
@@ -112,14 +112,14 @@ int main(int argc, char **argv)
     //Display Video Image
     laneVideo.set(CAP_PROP_POS_FRAMES, 0);
     laneVideo >> videoFrame;
-//    imshow("video frame ",videoFrame);
+    //    imshow("video frame ",videoFrame);
     undistort(videoFrame, videoFrameUndistorted, cameraMatrix, dist);
-//    imshow("undis",videoFrameUndistorted);
+    //    imshow("undis",videoFrameUndistorted);
     _videoFrameUndistorted = videoFrameUndistorted.clone();
     //Start Homography
     warpPerspective(_videoFrameUndistorted, videoFramePerspective, perspectiveMatrix, Size(370,465));
 
-    imshow("perspective",videoFramePerspective);
+    //    imshow("perspective",videoFramePerspective);
 
 
     Mat mergeImage;
@@ -133,12 +133,20 @@ int main(int argc, char **argv)
     namedWindow("Real Time Execution", WINDOW_NORMAL);
     laneVideo.set(CAP_PROP_POS_FRAMES, 0);
     laneVideo >> videoFrame;
-    Mat showVideos(videoFrame.size().height*2, videoFrame.size().width * 2, CV_8UC3, Scalar(0,0,0));
+    Mat showVideos(videoFrame.size().height, videoFrame.size().width, CV_8UC3, Scalar(0,0,0));
     laneDetection LaneAlgoVideo(_videoFrameUndistorted, perspectiveMatrix);
+    //imshow("enviarimage",_videoFrameUndistorted);
+
     undistort(videoFrame, videoFrameUndistorted, cameraMatrix, dist);
     _videoFrameUndistorted = videoFrameUndistorted.clone();
 
-    //fun.ReadVideo();
+
+    //    LaneAlgoVideo.laneDetctAlgo(" ");
+    //    finalResult = LaneAlgoVideo.getFinalResult();
+
+
+//    fun.ReadVideo();
+
     while(!videoFrame.empty())
     {
         draw_lines(videoFrame);

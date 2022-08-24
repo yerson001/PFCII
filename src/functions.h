@@ -25,12 +25,15 @@ class funciones{
 
         Point2f perspectiveDst[] = {
             Point2f(0,0),
-            Point2f(370,0),
-            Point2f(0,465),
-            Point2f(370,465)
+            Point2f(1280,0),
+            Point2f(0,720),
+            Point2f(1280,720)
         };
        Mat temp,temp1;
-        VideoCapture cap("/home/y3rsn/Dev/cpp/CV_2022/ALD/video/video_.mp4");
+        VideoCapture cap("/home/yrsn/Dev/ALD/video/video_.mp4");
+        int lowH = 0; int highH = 26;
+        int lowS = 98; int highS = 118;
+        int lowV = 71;  int highV = 183;
         while(1){
            Mat frame;
            Mat frame1;
@@ -53,13 +56,21 @@ class funciones{
 
 
            Mat Matrix = getPerspectiveTransform(perspectiveSrc,perspectiveDst);
-           warpPerspective(frame, output, Matrix,Size(370,465));
+           warpPerspective(frame, output, Matrix,Size(1280,720));
+
 
            //temp = bordes(frame,62);
            //temp1 = dilatacion(temp,1.5);
            imshow( "scena-with-roci estract", frame1);
           // imshow( "original - video", frame);
            imshow( "perspective transforme", output);
+
+           Mat imgHSV;
+           cvtColor(output, imgHSV, COLOR_BGR2HSV); //Convert the captured frame from BGR to HSV color space
+
+           Mat imgThresholded;
+           inRange(imgHSV, Scalar(lowH, lowS, lowV), Scalar(highH, highS, highV), imgThresholded);
+           imshow("imagethres",imgThresholded);
 
            //bool check = imwrite("/home/yrsn/Dev/PFCII/img/line.jpg", output);
 

@@ -75,8 +75,7 @@ public:
 
 
 
-laneDetection::laneDetection(const Mat _oriImage, const Mat _perspectiveMatrix)
-:oriImage(_oriImage), perspectiveMatrix(_perspectiveMatrix), blockNum(9), windowSize(150), recordCounter(0), initRecordCount(0), failDetectFlag(true)
+laneDetection::laneDetection(const Mat _oriImage, const Mat _perspectiveMatrix):oriImage(_oriImage), perspectiveMatrix(_perspectiveMatrix), blockNum(9), windowSize(150), recordCounter(0), initRecordCount(0), failDetectFlag(true)
 {
     histogram.resize(_oriImage.size().width);
     midPoint = _oriImage.size().width >> 1;
@@ -96,11 +95,36 @@ laneDetection::~laneDetection() {}
 void laneDetection::laneDetctAlgo(string name)
 {
 
+    int lowH = 0; int highH = 26;
+    int lowS = 98; int highS = 118;
+    int lowV = 71;  int highV = 183;
+
     //canny
     Mat oriImageGray;
+    //imshow("recibido",oriImage);
     cvtColor(oriImage, oriImageGray, COLOR_RGB2GRAY);
-    Canny(oriImageGray, edgeImage, 100, 150, 3);
+
+
+    //Canny(oriImageGray, edgeImage, 100, 150, 3);
+    Mat imgHSV;
+
+    cvtColor(oriImage, imgHSV, COLOR_BGR2HSV);
+
+
+    inRange(imgHSV, Scalar(lowH, lowS, lowV), Scalar(highH, highS, highV), edgeImage);
+    //imshow("imagethres",edgeImage);
     warpPerspective(edgeImage, warpEdgeImage, perspectiveMatrix, edgeImage.size());
+
+
+    //    cout << "Width : " << edgeImage.size().width << endl;
+    //    cout << "Height: " << edgeImage.size().height << endl;
+
+    //    imshow("warpEdge",warpEdgeImage);
+
+
+
+
+
     inRange(warpEdgeImage, Scalar(1),Scalar(255),warpEdgeImage);
     //Split the color image into different channels.
     warpPerspective(oriImage, warpOriImage, perspectiveMatrix, oriImage.size());
@@ -393,14 +417,14 @@ void laneDetection::laneFitting()
     int xL, xR;
     for(int i=0; i<mergeImage.size().height; i++)
     {
-         xL= pow(i,2) * curveCoefL(0) + i * curveCoefL(1) + curveCoefL(2);
-         xR= pow(i,2) * curveCoefR(0) + i * curveCoefR(1) + curveCoefR(2);
-         if(xL < 0) xL=0;
-         if(xL >= mergeImage.size().width) xL = mergeImage.size().width -1;
-         if(xR < 0) xR=0;
-         if(xR >= mergeImage.size().width) xR = mergeImage.size().width -1;
-         curvePointsL.push_back(Point2f(xL,i));
-         curvePointsR.push_back(Point2f(xR,i));
+        xL= pow(i,2) * curveCoefL(0) + i * curveCoefL(1) + curveCoefL(2);
+        xR= pow(i,2) * curveCoefR(0) + i * curveCoefR(1) + curveCoefR(2);
+        if(xL < 0) xL=0;
+        if(xL >= mergeImage.size().width) xL = mergeImage.size().width -1;
+        if(xR < 0) xR=0;
+        if(xR >= mergeImage.size().width) xR = mergeImage.size().width -1;
+        curvePointsL.push_back(Point2f(xL,i));
+        curvePointsR.push_back(Point2f(xR,i));
     }
     Mat curveL(curvePointsL, true);
     curveL.convertTo(curveL, CV_32S);
@@ -491,7 +515,7 @@ float laneDetection::getLaneCenterDist()
     cv::circle(mergeImageRGB,Point2f(laneCenter,result), 6, Scalar(0,0,255), FILLED);
 
     line(mergeImageRGB, Point2f(laneCenter,imageCenter+result), Point2f(laneCenter,result), Scalar(255, 0, 0),
-             3, LINE_8);
+         3, LINE_8);
     //debug(result);
     //imshow("goo",mergeImageRGB);
     return result;
